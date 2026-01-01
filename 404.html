@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SwimMarks - Page Not Found</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0066cc 0%, #00cc99 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+        }
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            margin-bottom: 1rem;
+        }
+        .btn {
+            display: inline-block;
+            background: white;
+            color: #0066cc;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 2rem;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+    <script>
+        // Auto-redirect to correct path
+        setTimeout(function() {
+            window.location.href = 'https://swimlegioncoach-droid.github.io/SwimMarks-/';
+        }, 2000);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🏊</div>
+        <h1>SwimMarks</h1>
+        <p>The page you're looking for isn't here.</p>
+        <p>Redirecting you to the app...</p>
+        <a href="https://swimlegioncoach-droid.github.io/SwimMarks-/" class="btn">
+            Go to SwimMarks
+        </a>
+    </div>
+</body>
+</html>
