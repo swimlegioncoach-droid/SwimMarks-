@@ -1,0 +1,2663 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SwimMarks - A dead-simple daily swim log that turns consistency into competition. Log fast, track streaks, climb the leaderboard.">
+    <meta name="theme-color" content="#0066cc">
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:title" content="SwimMarks - Daily Swim Log & Leaderboard">
+    <meta property="og:description" content="Log your swim in seconds. Compete on streaks. Climb the leaderboard.">
+    <meta property="og:image" content="https://swimlegioncoach-droid.github.io/SwimMarks-/og-image.png">
+    <meta property="og:url" content="https://swimlegioncoach-droid.github.io/SwimMarks-/">
+    <meta property="og:type" content="website">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/SwimMarks-/manifest.json">
+    <title>SwimMarks - Daily Swim Log</title>
+    
+    <!-- Icons -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%230066cc%22>🏊</text></svg>">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Confetti library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        /* RESET & BASE */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #0055aa;
+            --secondary: #00cc99;
+            --accent: #ffcc00;
+            --danger: #ff4444;
+            --success: #00aa66;
+            --light: #ffffff;
+            --dark: #1a2b3c;
+            --gray: #f0f2f5;
+            --gray-dark: #6c757d;
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.15);
+            --transition: all 0.2s ease;
+            --radius: 16px;
+            --radius-sm: 8px;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0066cc 0%, #00cc99 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* LAYOUT */
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: white;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+        
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 24px 20px;
+            text-align: center;
+            border-radius: 0 0 var(--radius) var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 8px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-text .mark {
+            color: var(--accent);
+        }
+        
+        .tagline {
+            font-size: 0.9rem;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+        
+        /* NAV */
+        .nav {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid var(--gray);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            justify-content: space-between;
+        }
+        
+        .nav-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            background: none;
+            color: var(--gray-dark);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            position: relative;
+        }
+        
+        .nav-btn i {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+        
+        .nav-btn.active {
+            color: var(--primary);
+        }
+        
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .nav-btn:hover {
+            color: var(--primary);
+            background: var(--gray);
+        }
+        
+        .settings-btn {
+            width: 60px;
+            flex: 0 0 60px;
+        }
+        
+        /* SCREENS */
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* HOME SCREEN */
+        .hero-log {
+            padding: 32px 20px;
+            text-align: center;
+            background: var(--gray);
+            margin: 0;
+        }
+        
+        .hero-title {
+            font-size: 24px;
+            color: var(--dark);
+            margin-bottom: 24px;
+            font-weight: 800;
+        }
+        
+        /* Meters Input */
+        .meters-input-container {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 20px;
+        }
+        
+        .meters-stepper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .stepper-btn {
+            width: 60px;
+            padding: 12px;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: var(--radius-sm);
+            color: var(--primary);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        
+        .stepper-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .stepper-btn:active {
+            transform: translateY(0);
+        }
+        
+        .meters-input {
+            flex: 1;
+            position: relative;
+        }
+        
+        .meters-input input {
+            width: 100%;
+            padding: 20px 10px;
+            font-size: 40px;
+            font-weight: 700;
+            text-align: center;
+            border: 3px solid var(--primary);
+            border-radius: var(--radius);
+            background: white;
+            color: var(--dark);
+            transition: var(--transition);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -1px;
+            min-height: 80px;
+        }
+        
+        .meters-input input.large-number {
+            font-size: 36px;
+            padding: 20px 5px;
+        }
+        
+        .meters-input input.xlarge-number {
+            font-size: 32px;
+            padding: 20px 2px;
+            letter-spacing: -2px;
+        }
+        
+        .meters-input input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .meters-input input::placeholder {
+            color: var(--gray-dark);
+            opacity: 0.5;
+            font-size: 20px;
+        }
+        
+        .meters-label {
+            display: block;
+            font-size: 14px;
+            color: var(--gray-dark);
+            margin-top: 8px;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        
+        /* Quick Fill */
+        .quick-fill-container {
+            margin: 16px 0;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .quick-fill-btn {
+            background: rgba(0, 102, 204, 0.15);
+            border: 2px solid rgba(0, 102, 204, 0.4);
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 16px;
+            color: var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            width: 100%;
+            max-width: 300px;
+            justify-content: center;
+        }
+        
+        .quick-fill-btn:hover {
+            background: rgba(0, 102, 204, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
+        }
+        
+        .quick-fill-btn:active {
+            transform: translateY(0);
+        }
+        
+        .quick-fill-btn i {
+            font-size: 14px;
+        }
+        
+        .log-button {
+            width: 100%;
+            max-width: 300px;
+            margin: 24px auto 0;
+        }
+        
+        .log-button button {
+            width: 100%;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .log-button button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 102, 204, 0.3);
+        }
+        
+        .log-button button:active {
+            transform: translateY(0);
+        }
+        
+        /* Note Section */
+        .note-section {
+            margin-top: 16px;
+            text-align: center;
+        }
+        
+        .note-toggle {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: var(--transition);
+        }
+        
+        .note-toggle:hover {
+            background: rgba(0, 102, 204, 0.1);
+        }
+        
+        .note-container {
+            display: none;
+            margin-top: 12px;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .note-input {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        
+        .note-input input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            transition: var(--transition);
+        }
+        
+        .note-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        /* YOUR STATS */
+        .your-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            background: white;
+            padding: 24px 20px;
+            margin: 0;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .stat {
+            background: var(--gray);
+            padding: 20px 12px;
+            text-align: center;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 4px;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        /* LEADERBOARD */
+        .leaderboard {
+            padding: 24px 20px;
+            background: white;
+            margin: 0;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .section-title span {
+            font-size: 14px;
+            color: var(--gray-dark);
+            font-weight: 500;
+        }
+        
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 18px;
+            background: white;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow);
+            border: 2px solid transparent;
+            transition: var(--transition);
+        }
+        
+        .leaderboard-item:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+        
+        .leaderboard-item.you {
+            background: linear-gradient(135deg, rgba(0, 102, 204, 0.1) 0%, rgba(0, 204, 153, 0.1) 100%);
+            border-color: var(--primary);
+        }
+        
+        .rank {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        
+        .rank-1 {
+            background: gold;
+            border-radius: 50%;
+            color: var(--dark);
+        }
+        
+        .rank-2 {
+            background: silver;
+            border-radius: 50%;
+            color: var(--dark);
+        }
+        
+        .rank-3 {
+            background: #cd7f32;
+            border-radius: 50%;
+            color: white;
+        }
+        
+        .swimmer-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .swimmer-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .swimmer-meta {
+            font-size: 12px;
+            color: var(--gray-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .swimmer-meta i {
+            color: var(--danger);
+        }
+        
+        .swimmer-meters {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.5px;
+        }
+        
+        /* RECENT BADGES */
+        .badges {
+            padding: 24px 20px;
+            background: white;
+            margin: 0;
+        }
+        
+        .badges-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .badge {
+            background: var(--gray);
+            border-radius: var(--radius-sm);
+            padding: 20px 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--gray);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .badge.earned {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(255, 204, 0, 0.1) 0%, rgba(255, 204, 0, 0.05) 100%);
+        }
+        
+        .badge.locked {
+            opacity: 0.6;
+            filter: grayscale(0.3);
+        }
+        
+        .badge-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .badge-name {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+        
+        .badge-desc {
+            font-size: 11px;
+            color: var(--gray-dark);
+            line-height: 1.2;
+        }
+        
+        /* SETTINGS SCREEN */
+        .settings {
+            padding: 20px;
+            background: white;
+            min-height: calc(100vh - 180px);
+        }
+        
+        .settings-section {
+            background: var(--gray);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Pool Length Selector */
+        .pool-length-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .pool-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .pool-option:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .pool-option.active {
+            border-color: var(--primary);
+            background: rgba(0, 102, 204, 0.05);
+        }
+        
+        .pool-option.custom {
+            border-style: dashed;
+        }
+        
+        .pool-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .pool-option.custom .pool-icon {
+            background: var(--secondary);
+        }
+        
+        .pool-label {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .pool-description {
+            font-size: 12px;
+            color: var(--gray-dark);
+        }
+        
+        /* Custom Pool Dialog */
+        .custom-pool-dialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 4000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .custom-pool-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .custom-pool-input {
+            width: 100%;
+            padding: 16px;
+            font-size: 24px;
+            text-align: center;
+            border: 3px solid var(--primary);
+            border-radius: var(--radius-sm);
+            margin: 20px 0;
+            font-weight: 700;
+        }
+        
+        .custom-pool-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #00bb88;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background: #ff3333;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        
+        .about-content {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .about-content h3 {
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+        
+        .about-content p {
+            margin-bottom: 16px;
+            color: var(--gray-dark);
+            line-height: 1.5;
+        }
+        
+        /* TOAST - FIXED */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--primary);
+            color: white;
+            padding: 16px 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 90%;
+            border-left: 4px solid var(--accent);
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .toast i {
+            font-size: 20px;
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-title {
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        
+        .toast-desc {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* DOPAMINE CELEBRATION */
+        .celebration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 102, 204, 0.95);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        .celebration-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            animation: scaleIn 0.3s ease;
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .celebration-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: bounce 1s ease infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .celebration-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .celebration-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .celebration-stat {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .celebration-stat-icon {
+            font-size: 24px;
+        }
+        
+        .celebration-stat-text {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .celebration-stat-change {
+            font-size: 20px;
+            color: var(--success);
+            font-weight: 600;
+            margin-left: 10px;
+            animation: pulse 1.5s ease infinite;
+        }
+        
+        .celebration-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+        
+        /* STREAK LOSS MODAL */
+        .streak-loss-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .streak-loss-content {
+            background: white;
+            padding: 32px;
+            border-radius: var(--radius);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: scaleIn 0.3s ease;
+        }
+        
+        /* WELCOME OVERLAY */
+        .welcome-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 102, 204, 0.95);
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .welcome-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.4s ease;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .welcome-icon {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--gray-dark);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        
+        .welcome-steps {
+            text-align: left;
+            background: var(--gray);
+            padding: 20px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 24px;
+        }
+        
+        .welcome-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .welcome-step:last-child {
+            margin-bottom: 0;
+        }
+        
+        .step-number {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        /* SHARE CANVAS */
+        #share-canvas {
+            display: none;
+            position: absolute;
+            top: -1000px;
+            left: -1000px;
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 480px) {
+            .container {
+                box-shadow: none;
+            }
+            
+            .badges-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .meters-input input {
+                font-size: 36px;
+                padding: 20px 5px;
+                min-height: 70px;
+            }
+            
+            .meters-input input.large-number {
+                font-size: 32px;
+                padding: 20px 2px;
+            }
+            
+            .meters-input input.xlarge-number {
+                font-size: 28px;
+                padding: 20px 1px;
+            }
+            
+            .stepper-btn {
+                width: 50px;
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .stat-value {
+                font-size: 28px;
+            }
+            
+            .celebration-title {
+                font-size: 28px;
+            }
+            
+            .celebration-stat-text {
+                font-size: 20px;
+            }
+            
+            .hero-title {
+                font-size: 22px;
+                margin-bottom: 20px;
+            }
+            
+            .section-title {
+                font-size: 18px;
+            }
+            
+            .swimmer-meters {
+                font-size: 18px;
+            }
+        }
+        
+        @media (max-width: 350px) {
+            .badges-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .meters-input input {
+                font-size: 32px;
+                padding: 16px 2px;
+                min-height: 60px;
+            }
+            
+            .meters-input input.large-number {
+                font-size: 28px;
+            }
+            
+            .meters-input input.xlarge-number {
+                font-size: 24px;
+            }
+            
+            .stepper-btn {
+                width: 45px;
+                padding: 8px;
+                font-size: 12px;
+            }
+        }
+        
+        /* UTILITIES */
+        .text-center { text-align: center; }
+        .mt-1 { margin-top: 8px; }
+        .mt-2 { margin-top: 16px; }
+        .mb-1 { margin-bottom: 8px; }
+        .mb-2 { margin-bottom: 16px; }
+        .text-muted { color: var(--gray-dark); }
+        .text-primary { color: var(--primary); }
+        .text-accent { color: var(--accent); }
+        .text-danger { color: var(--danger); }
+        .text-success { color: var(--success); }
+        .fw-bold { font-weight: 700; }
+        .fs-sm { font-size: 14px; }
+        .fs-xs { font-size: 12px; }
+        
+        /* ANIMATIONS */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- PWA Routing Fix Script - FIXED -->
+    <script>
+        (function() {
+            // Only redirect if we're at root and not already at correct path
+            const currentPath = window.location.pathname;
+            const correctPath = '/SwimMarks-/';
+            
+            if (currentPath === '/' || currentPath === '/index.html') {
+                // Only redirect on GitHub Pages
+                if (window.location.hostname === 'swimlegioncoach-droid.github.io') {
+                    window.location.href = 'https://swimlegioncoach-droid.github.io/SwimMarks-/';
+                }
+            }
+            
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/SwimMarks-/sw.js', {
+                        scope: '/SwimMarks-/'
+                    }).catch(function(err) {
+                        console.log('SW registration failed:', err);
+                    });
+                });
+            }
+        })();
+    </script>
+
+    <!-- Welcome Overlay -->
+    <div id="welcome-overlay" class="welcome-overlay">
+        <div class="welcome-content">
+            <div class="welcome-icon">🏊</div>
+            <h1 class="welcome-title">Welcome to SwimMarks</h1>
+            <p class="welcome-subtitle">A dead-simple daily swim log that turns consistency into competition.</p>
+            
+            <div class="welcome-steps">
+                <div class="welcome-step">
+                    <div class="step-number">1</div>
+                    <div>Log your daily swim (takes 3 seconds)</div>
+                </div>
+                <div class="welcome-step">
+                    <div class="step-number">2</div>
+                    <div>Build your streak & climb the leaderboard</div>
+                </div>
+                <div class="welcome-step">
+                    <div class="step-number">3</div>
+                    <div>Earn badges for milestones</div>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="closeWelcome()" style="width: 100%; padding: 16px; font-size: 16px;">
+                <i class="fas fa-play"></i> Start Swimming!
+            </button>
+            
+            <p class="mt-2 fs-sm text-muted">
+                <i class="fas fa-lock"></i> Your data stays on your device
+            </p>
+        </div>
+    </div>
+
+    <!-- Custom Pool Length Dialog -->
+    <div id="custom-pool-dialog" class="custom-pool-dialog">
+        <div class="custom-pool-content">
+            <h3 style="margin-bottom: 16px; color: var(--primary);">Custom Pool Length</h3>
+            <p style="margin-bottom: 16px; color: var(--gray-dark);">
+                Enter your pool length in meters. This will be used for all distance increments.
+            </p>
+            <input type="number" id="custom-pool-input" class="custom-pool-input" placeholder="e.g., 33" min="10" max="100" step="1">
+            <p style="font-size: 12px; color: var(--gray-dark); margin-bottom: 20px; text-align: center;">
+                Common custom lengths: 33m, 66m, 25yd (≈23m), 50yd (≈46m)
+            </p>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn" onclick="saveCustomPoolLength()" style="flex: 1;">
+                    <i class="fas fa-check"></i> Save
+                </button>
+                <button class="btn btn-secondary" onclick="hideCustomPoolDialog()" style="flex: 1;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <div class="logo-text">
+                    Swim<span class="mark">Marks</span>
+                </div>
+            </div>
+            <p class="tagline">Leave your mark. Every day.</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav">
+            <button class="nav-btn active" onclick="showScreen('home')">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </button>
+            <button class="nav-btn settings-btn" onclick="showScreen('settings')" title="Settings">
+                <i class="fas fa-cog"></i>
+                <span class="fs-xs">Settings</span>
+            </button>
+        </div>
+
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen active">
+            <!-- Today's Log -->
+            <div class="hero-log">
+                <h2 class="hero-title">Today's Swim</h2>
+                
+                <!-- Meter Input with Stepper -->
+                <div class="meters-input-container">
+                    <div class="meters-stepper">
+                        <button class="stepper-btn" onclick="adjustMeters(-increment)" id="decrease-btn">-<span id="increment-display">50</span></button>
+                        <div class="meters-input">
+                            <input type="number" id="meters-input" placeholder="0" min="50" max="50000" step="50" autofocus>
+                        </div>
+                        <button class="stepper-btn" onclick="adjustMeters(increment)" id="increase-btn">+<span id="increment-display-2">50</span></button>
+                    </div>
+                    <span class="meters-label" id="pool-length-label">meters (50m increments — be honest 😉)</span>
+                    
+                    <!-- Quick Fill (Last Swim) -->
+                    <div class="quick-fill-container" id="quick-fill-container" style="display: none;">
+                        <button class="quick-fill-btn" onclick="fillLastSwim()" id="quick-fill-btn">
+                            <i class="fas fa-redo"></i> Use last swim: <span id="last-swim-distance">0</span>m
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Note Section -->
+                <div class="note-section">
+                    <button class="note-toggle" onclick="toggleNote()">
+                        <i class="fas fa-plus"></i> Add Note
+                    </button>
+                    <div class="note-container" id="note-container">
+                        <div class="note-input">
+                            <input type="text" id="swim-note" placeholder="How did it feel? (optional)" maxlength="100">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="log-button">
+                    <button onclick="logSwim()">
+                        <i class="fas fa-plus"></i> LOG SWIM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Your Stats -->
+            <div class="your-stats">
+                <div class="stat">
+                    <div class="stat-value" id="streak-count">0</div>
+                    <div class="stat-label">Day Streak</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="total-meters">0</div>
+                    <div class="stat-label">Total Meters</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="weekly-rank">-</div>
+                    <div class="stat-label">This Week</div>
+                </div>
+            </div>
+
+            <!-- Weekly Leaderboard -->
+            <div class="leaderboard">
+                <div class="section-title">
+                    Weekly Leaderboard
+                    <span id="leaderboard-subtitle">Reset in <span id="reset-days">7</span> days</span>
+                </div>
+                <div class="leaderboard-list" id="leaderboard-list">
+                    <!-- Filled by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Recent Badges -->
+            <div class="badges">
+                <div class="section-title">
+                    Recent SwimMarks
+                    <span class="fs-sm text-muted" id="badge-count">0/8</span>
+                </div>
+                <div class="badges-list" id="recent-badges">
+                    <!-- Filled by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <div class="settings">
+                <!-- Pool Settings Section -->
+                <div class="settings-section">
+                    <h3 class="settings-title">
+                        <i class="fas fa-swimming-pool"></i> Pool Settings
+                    </h3>
+                    
+                    <div class="pool-length-selector">
+                        <div class="pool-option" onclick="setPoolLength(25)" id="pool-option-25">
+                            <div class="pool-icon">25</div>
+                            <div>
+                                <div class="pool-label">Short Course</div>
+                                <div class="pool-description">25 meters (most pools)</div>
+                            </div>
+                        </div>
+                        <div class="pool-option active" onclick="setPoolLength(50)" id="pool-option-50">
+                            <div class="pool-icon">50</div>
+                            <div>
+                                <div class="pool-label">Olympic</div>
+                                <div class="pool-description">50 meters (competition)</div>
+                            </div>
+                        </div>
+                        <div class="pool-option custom" onclick="showCustomPoolDialog()" id="pool-option-custom">
+                            <div class="pool-icon">∞</div>
+                            <div>
+                                <div class="pool-label">Custom Length</div>
+                                <div class="pool-description">Set your own pool length</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="mt-2 fs-sm text-muted">
+                        <i class="fas fa-info-circle"></i> This affects all distance increments. Choose your actual pool length for honest logging.
+                    </p>
+                </div>
+
+                <!-- Social Section -->
+                <div class="settings-section">
+                    <h3 class="settings-title">
+                        <i class="fas fa-share-alt"></i> Share
+                    </h3>
+                    
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-small" onclick="shareProgress()">
+                            <i class="fas fa-share-alt"></i> Share My Progress
+                        </button>
+                        <button class="btn btn-secondary btn-small" onclick="shareLatestBadge()">
+                            <i class="fas fa-trophy"></i> Share Latest Badge
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Data Section -->
+                <div class="settings-section">
+                    <h3 class="settings-title">
+                        <i class="fas fa-database"></i> Data
+                    </h3>
+                    
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-danger btn-small" onclick="confirmReset()">
+                            <i class="fas fa-trash"></i> Reset All
+                        </button>
+                        <button class="btn btn-secondary btn-small" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                    </div>
+                    
+                    <p class="mt-2 fs-sm text-muted">
+                        <i class="fas fa-lock"></i> All data is stored locally on your device
+                    </p>
+                </div>
+
+                <!-- Coming Soon Section -->
+                <div class="settings-section">
+                    <h3 class="settings-title">
+                        <i class="fas fa-rocket"></i> Coming Soon
+                    </h3>
+                    
+                    <div class="about-content">
+                        <p class="text-muted fs-sm">
+                            <i class="fas fa-users"></i> Teams & Friends<br>
+                            <i class="fas fa-chart-line"></i> Progress Insights<br>
+                            <i class="fas fa-bell"></i> Reminders<br>
+                            <span class="fs-xs">Have ideas? We'd love to hear them!</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- About Section -->
+                <div class="settings-section">
+                    <h3 class="settings-title">
+                        <i class="fas fa-info-circle"></i> About
+                    </h3>
+                    
+                    <div class="about-content">
+                        <h3>SwimMarks v1.0</h3>
+                        <p>A dead-simple daily swim log that turns consistency into competition.</p>
+                        <p class="text-muted fs-sm">Built for swimmers who want to track, compete, and improve.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Overlay -->
+    <div id="celebration-overlay" class="celebration-overlay" style="display: none;">
+        <div class="celebration-content">
+            <div class="celebration-icon" id="celebration-icon">🏊</div>
+            <h2 class="celebration-title" id="celebration-title">Swim Logged!</h2>
+            
+            <div class="celebration-stats" id="celebration-stats">
+                <!-- Filled by JavaScript -->
+            </div>
+            
+            <div class="celebration-actions">
+                <button class="btn" onclick="closeCelebration()">
+                    <i class="fas fa-check"></i> Continue
+                </button>
+                <button class="btn btn-secondary" id="celebrate-share-btn" style="display: none;" onclick="shareCelebration()">
+                    <i class="fas fa-share-alt"></i> Share
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <i id="toast-icon"></i>
+        <div class="toast-content">
+            <div id="toast-title"></div>
+            <div id="toast-desc"></div>
+        </div>
+        <button class="toast-close" onclick="hideToast()">×</button>
+    </div>
+
+    <!-- Hidden Canvas for Share Cards -->
+    <canvas id="share-canvas" width="1200" height="630"></canvas>
+
+    <script>
+        // ===================== STATE =====================
+        let userData = {
+            totalMeters: 0,
+            practices: [],
+            currentStreak: 0,
+            bestStreak: 0,
+            badges: [],
+            joinDate: new Date().toISOString(),
+            name: "You",
+            celebratedMilestones: [],
+            lastLogDate: null,
+            lastRank: null
+        };
+        
+        let demoSwimmers = [
+            { name: "Alex", meters: 24000, streak: 5, id: "demo1" },
+            { name: "Sam", meters: 19000, streak: 3, id: "demo2" },
+            { name: "Jordan", meters: 16500, streak: 7, id: "demo3" },
+            { name: "Taylor", meters: 14200, streak: 2, id: "demo4" },
+            { name: "Casey", meters: 11800, streak: 4, id: "demo5" }
+        ];
+
+        // Pool length settings
+        let poolLength = 50;
+        let increment = 50;
+        
+        // ===================== SIMPLIFIED BADGES =====================
+        const badges = [
+            {
+                id: "first_swim",
+                name: "First Splash",
+                icon: "💦",
+                description: "Log your first swim",
+                check: (data) => data.practices.length >= 1,
+                points: 10
+            },
+            {
+                id: "week_streak",
+                name: "Week Warrior",
+                icon: "🔥",
+                description: "7-day streak",
+                check: (data) => data.currentStreak >= 7,
+                points: 25
+            },
+            {
+                id: "month_streak",
+                name: "Month Master",
+                icon: "🗓️",
+                description: "30-day streak",
+                check: (data) => data.currentStreak >= 30,
+                points: 50
+            },
+            {
+                id: "25k",
+                name: "Marathon",
+                icon: "🏁",
+                description: "25,000 meters",
+                check: (data) => data.totalMeters >= 25000,
+                points: 30
+            },
+            {
+                id: "100k",
+                name: "Centurion",
+                icon: "👑",
+                description: "100,000 meters",
+                check: (data) => data.totalMeters >= 100000,
+                points: 100
+            },
+            {
+                id: "weekly_champ",
+                name: "Weekly #1",
+                icon: "🥇",
+                description: "Top the leaderboard",
+                check: (data) => {
+                    const leaderboard = generateLeaderboard();
+                    return leaderboard[0] && leaderboard[0].isYou;
+                },
+                points: 40
+            },
+            {
+                id: "comeback",
+                name: "Comeback Kid",
+                icon: "💪",
+                description: "Log after 7 days off",
+                check: (data) => {
+                    if (data.practices.length < 2) return false;
+                    const sorted = [...data.practices].sort((a, b) => 
+                        new Date(a.date) - new Date(b.date)
+                    );
+                    for (let i = 1; i < sorted.length; i++) {
+                        const diff = (new Date(sorted[i].date) - new Date(sorted[i-1].date)) / (1000 * 60 * 60 * 24);
+                        if (diff >= 7) return true;
+                    }
+                    return false;
+                },
+                points: 35
+            },
+            {
+                id: "double_day",
+                name: "Double Dip",
+                icon: "⚡",
+                description: "Two swims in one day",
+                check: (data) => {
+                    const practiceDates = data.practices.map(p => p.date.split('T')[0]);
+                    const dateCounts = {};
+                    practiceDates.forEach(date => {
+                        dateCounts[date] = (dateCounts[date] || 0) + 1;
+                    });
+                    return Object.values(dateCounts).some(count => count >= 2);
+                },
+                points: 40
+            }
+        ];
+
+        // ===================== INITIALIZATION =====================
+        function init() {
+            loadData();
+            loadPoolSettings();
+            showWelcomeIfFirstTime();
+            updateHomeScreen();
+            setupEventListeners();
+            updateQuickFill();
+            
+            // Focus input
+            setTimeout(() => {
+                document.getElementById('meters-input').focus();
+            }, 500);
+        }
+
+        function showWelcomeIfFirstTime() {
+            if (!localStorage.getItem('swimMarksSeenWelcome')) {
+                document.getElementById('welcome-overlay').style.display = 'flex';
+            }
+        }
+
+        function closeWelcome() {
+            document.getElementById('welcome-overlay').style.display = 'none';
+            localStorage.setItem('swimMarksSeenWelcome', 'true');
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('swimMarksData');
+            if (saved) {
+                userData = JSON.parse(saved);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('swimMarksData', JSON.stringify(userData));
+        }
+
+        function loadPoolSettings() {
+            const savedPool = localStorage.getItem('swimMarksPoolLength');
+            if (savedPool) {
+                poolLength = parseInt(savedPool);
+                increment = poolLength; // Increment equals pool length
+                updatePoolUI();
+            }
+        }
+
+        function savePoolSettings() {
+            localStorage.setItem('swimMarksPoolLength', poolLength);
+        }
+
+        function updatePoolUI() {
+            // Update increment displays
+            document.querySelectorAll('#increment-display, #increment-display-2').forEach(el => {
+                el.textContent = increment;
+            });
+            
+            // Update button labels
+            document.getElementById('decrease-btn').innerHTML = `-${increment}`;
+            document.getElementById('increase-btn').innerHTML = `+${increment}`;
+            
+            // Update pool length label
+            const label = document.getElementById('pool-length-label');
+            if (poolLength === 25) {
+                label.textContent = `meters (25m increments — short course)`;
+            } else if (poolLength === 50) {
+                label.textContent = `meters (50m increments — olympic)`;
+            } else {
+                label.textContent = `meters (${poolLength}m increments — custom pool)`;
+            }
+            
+            // Update input step
+            const input = document.getElementById('meters-input');
+            input.step = increment;
+            input.min = increment;
+            
+            // Update selected pool option
+            document.querySelectorAll('.pool-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            if (poolLength === 25) {
+                document.getElementById('pool-option-25').classList.add('active');
+            } else if (poolLength === 50) {
+                document.getElementById('pool-option-50').classList.add('active');
+            } else {
+                document.getElementById('pool-option-custom').classList.add('active');
+                // Update custom pool display
+                const customIcon = document.querySelector('#pool-option-custom .pool-icon');
+                customIcon.textContent = poolLength;
+            }
+        }
+
+        // ===================== NAVIGATION =====================
+        function showScreen(screenId) {
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.nav-btn').classList.add('active');
+            
+            // Update screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId + '-screen').classList.add('active');
+            
+            // Auto-focus input when returning to home
+            if (screenId === 'home') {
+                setTimeout(() => {
+                    document.getElementById('meters-input').focus();
+                }, 300);
+            }
+        }
+
+        // ===================== MANUAL INPUT ENHANCEMENTS =====================
+        function adjustMeters(change) {
+            const input = document.getElementById('meters-input');
+            let currentValue = parseInt(input.value) || 0;
+            let newValue = currentValue + change;
+            
+            // Ensure minimum of pool length
+            if (newValue < increment) {
+                newValue = increment;
+            }
+            
+            // Ensure step of pool length
+            if (newValue % increment !== 0) {
+                newValue = Math.round(newValue / increment) * increment;
+            }
+            
+            input.value = newValue;
+            adjustFontSizeForNumber(newValue);
+            input.focus();
+            
+            // Visual feedback for adjustment
+            const btn = change > 0 ? document.getElementById('increase-btn') : 
+                                     document.getElementById('decrease-btn');
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                btn.style.transform = '';
+            }, 100);
+        }
+
+        // FIX: Adjust font size based on number length
+        function adjustFontSizeForNumber(number) {
+            const input = document.getElementById('meters-input');
+            const numStr = number.toString();
+            
+            // Remove any existing size classes
+            input.classList.remove('large-number', 'xlarge-number');
+            
+            if (numStr.length >= 5) {
+                // 5+ digits (10,000+)
+                input.classList.add('xlarge-number');
+            } else if (numStr.length >= 4) {
+                // 4 digits (1,000-9,999)
+                input.classList.add('large-number');
+            }
+        }
+
+        function fillLastSwim() {
+            if (userData.practices.length === 0) {
+                showToast('No previous swims', 'Log your first swim!', '🏊');
+                return;
+            }
+            
+            // Get the most recent practice
+            const lastPractice = [...userData.practices]
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            
+            const input = document.getElementById('meters-input');
+            input.value = lastPractice.meters;
+            adjustFontSizeForNumber(lastPractice.meters);
+            input.focus();
+            
+            // Visual feedback
+            const quickFillBtn = document.getElementById('quick-fill-btn');
+            quickFillBtn.style.transform = 'scale(0.95)';
+            quickFillBtn.style.background = 'rgba(0, 102, 204, 0.3)';
+            setTimeout(() => {
+                quickFillBtn.style.transform = '';
+                quickFillBtn.style.background = '';
+            }, 200);
+            
+            showToast('Last swim filled', `${formatNumber(lastPractice.meters)}m ready to log`, '↺');
+        }
+
+        function updateQuickFill() {
+            const quickFillContainer = document.getElementById('quick-fill-container');
+            const lastSwimDistance = document.getElementById('last-swim-distance');
+            
+            if (userData.practices.length > 0) {
+                // Get the most recent practice
+                const lastPractice = [...userData.practices]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                
+                lastSwimDistance.textContent = formatNumber(lastPractice.meters);
+                quickFillContainer.style.display = 'block';
+            } else {
+                quickFillContainer.style.display = 'none';
+            }
+        }
+
+        // ===================== POOL LENGTH SETTINGS =====================
+        function setPoolLength(length) {
+            poolLength = length;
+            increment = length;
+            savePoolSettings();
+            updatePoolUI();
+            showToast('Pool length updated', `Now using ${length}m increments`, '🏊');
+        }
+
+        function showCustomPoolDialog() {
+            document.getElementById('custom-pool-dialog').style.display = 'flex';
+            document.getElementById('custom-pool-input').value = poolLength !== 25 && poolLength !== 50 ? poolLength : '';
+            setTimeout(() => {
+                document.getElementById('custom-pool-input').focus();
+            }, 100);
+        }
+
+        function hideCustomPoolDialog() {
+            document.getElementById('custom-pool-dialog').style.display = 'none';
+        }
+
+        function saveCustomPoolLength() {
+            const input = document.getElementById('custom-pool-input');
+            const length = parseInt(input.value);
+            
+            if (!length || length < 10 || length > 100) {
+                showToast('Invalid length', 'Enter a length between 10-100 meters', '⚠️');
+                input.classList.add('shake');
+                setTimeout(() => input.classList.remove('shake'), 500);
+                return;
+            }
+            
+            setPoolLength(length);
+            hideCustomPoolDialog();
+        }
+
+        // ===================== NOTE SYSTEM =====================
+        function toggleNote() {
+            const container = document.getElementById('note-container');
+            const isVisible = container.style.display === 'block';
+            container.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                setTimeout(() => {
+                    document.getElementById('swim-note').focus();
+                }, 100);
+            }
+        }
+
+        // ===================== HOME SCREEN =====================
+        function updateHomeScreen() {
+            // Update stats
+            document.getElementById('streak-count').textContent = userData.currentStreak;
+            document.getElementById('total-meters').textContent = formatNumber(userData.totalMeters);
+            
+            // Update leaderboard
+            updateLeaderboard();
+            
+            // Update recent badges
+            updateRecentBadges();
+            
+            // Update reset counter (Monday-based)
+            updateResetCounter();
+            
+            // Update badge count
+            document.getElementById('badge-count').textContent = `${userData.badges.length}/${badges.length}`;
+            
+            // Update quick fill
+            updateQuickFill();
+        }
+
+        function updateResetCounter() {
+            const now = new Date();
+            const day = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            
+            // Calculate days until next Monday - FIXED
+            let daysUntilMonday;
+            if (day === 0) { // It's Sunday
+                daysUntilMonday = 1;
+            } else if (day === 1) { // It's Monday
+                daysUntilMonday = 7;
+            } else {
+                daysUntilMonday = 8 - day; // Days until next Monday
+            }
+            
+            document.getElementById('reset-days').textContent = daysUntilMonday;
+            
+            // Show reset notification on Sunday
+            const subtitle = document.getElementById('leaderboard-subtitle');
+            if (day === 0) {
+                subtitle.innerHTML = `<span style="color:var(--danger);">Reset <strong>TOMORROW</strong></span>`;
+            } else if (day === 1) {
+                subtitle.innerHTML = `<span style="color:var(--success);">Fresh week! Reset in ${daysUntilMonday} days</span>`;
+            } else {
+                subtitle.innerHTML = `Reset in <span id="reset-days">${daysUntilMonday}</span> days`;
+            }
+        }
+
+        function generateLeaderboard() {
+            const allSwimmers = [...demoSwimmers];
+            
+            // Add user data
+            const userWeeklyMeters = calculateWeeklyMeters();
+            allSwimmers.push({
+                name: "You",
+                meters: userWeeklyMeters,
+                streak: userData.currentStreak,
+                id: "you",
+                isYou: true
+            });
+            
+            // Sort by meters
+            return allSwimmers.sort((a, b) => b.meters - a.meters);
+        }
+
+        function calculateWeeklyMeters() {
+            const now = new Date();
+            // Get last Monday
+            const day = now.getDay();
+            const diff = day === 0 ? 6 : day - 1; // Days since Monday
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - diff);
+            monday.setHours(0, 0, 0, 0);
+            
+            return userData.practices
+                .filter(p => new Date(p.date) >= monday)
+                .reduce((sum, p) => sum + p.meters, 0);
+        }
+
+        function updateLeaderboard() {
+            const leaderboard = generateLeaderboard();
+            const list = document.getElementById('leaderboard-list');
+            
+            list.innerHTML = leaderboard.map((swimmer, index) => {
+                const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+                
+                return `
+                    <div class="leaderboard-item ${swimmer.isYou ? 'you' : ''}">
+                        <div class="rank ${rankClass}">${index + 1}</div>
+                        <div class="swimmer-info">
+                            <div class="swimmer-name">${swimmer.name}</div>
+                            <div class="swimmer-meta">
+                                <span>${formatNumber(swimmer.meters)}m</span>
+                                <span>•</span>
+                                <span><i class="fas fa-fire"></i> ${swimmer.streak}d</span>
+                            </div>
+                        </div>
+                        <div class="swimmer-meters">${formatNumber(swimmer.meters)}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Update user's rank and track rank change
+            const userRank = leaderboard.findIndex(s => s.isYou) + 1;
+            document.getElementById('weekly-rank').textContent = `#${userRank}`;
+            
+            return userRank;
+        }
+
+        function updateRecentBadges() {
+            const earnedBadgeIds = userData.badges.map(b => b.id);
+            const allBadgesDisplay = badges.slice(0, 6).map(badge => {
+                const isEarned = earnedBadgeIds.includes(badge.id);
+                return { ...badge, earned: isEarned };
+            });
+            
+            const container = document.getElementById('recent-badges');
+            
+            if (allBadgesDisplay.length === 0) {
+                container.innerHTML = `
+                    <div class="badge">
+                        <div class="badge-icon">🏊</div>
+                        <div class="badge-name">Log your first swim!</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = allBadgesDisplay.map(badge => {
+                if (badge.earned) {
+                    return `
+                        <div class="badge earned" onclick="shareBadgeCard('${badge.id}')" title="${badge.description}">
+                            <div class="badge-icon">${badge.icon}</div>
+                            <div class="badge-name">${badge.name}</div>
+                            <div class="badge-desc">Earned</div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="badge locked" title="Locked">
+                            <div class="badge-icon">🔒</div>
+                            <div class="badge-name">${badge.name}</div>
+                            <div class="badge-desc">???</div>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        // ===================== LOGGING & CELEBRATION =====================
+        function logSwim() {
+            const input = document.getElementById('meters-input');
+            const meters = parseInt(input.value);
+            
+            // FIXED: Use poolLength instead of increment
+            if (!meters || meters < poolLength) {
+                showToast(`Enter at least ${poolLength}m`, `Minimum swim is ${poolLength} meters`, '⚠️');
+                input.classList.add('shake');
+                setTimeout(() => input.classList.remove('shake'), 500);
+                input.focus();
+                return;
+            }
+            
+            // Ensure it's a multiple of pool length
+            if (meters % poolLength !== 0) {
+                showToast(`Invalid distance`, `Must be in ${poolLength}m increments`, '⚠️');
+                input.classList.add('shake');
+                setTimeout(() => input.classList.remove('shake'), 500);
+                input.focus();
+                return;
+            }
+            
+            // Get note
+            const noteInput = document.getElementById('swim-note');
+            const note = noteInput.value.trim();
+            
+            // Store current rank for comparison
+            const oldRank = userData.lastRank;
+            const oldStreak = userData.currentStreak;
+            
+            // Create practice
+            const practice = {
+                date: new Date().toISOString(),
+                meters: meters,
+                note: note || null
+            };
+            
+            userData.practices.push(practice);
+            userData.totalMeters += meters;
+            userData.lastLogDate = new Date().toISOString();
+            
+            // Update streak
+            updateStreak();
+            
+            // Save and update
+            saveData();
+            checkForNewBadges();
+            checkStreakMilestones();
+            const newRank = updateLeaderboard();
+            
+            // Track rank for next comparison
+            userData.lastRank = newRank;
+            saveData();
+            
+            // Reset inputs
+            input.value = '';
+            input.classList.remove('large-number', 'xlarge-number');
+            noteInput.value = '';
+            const noteContainer = document.getElementById('note-container');
+            noteContainer.style.display = 'none';
+            
+            // Show dopamine celebration
+            showCelebration(meters, oldRank, newRank, oldStreak, userData.currentStreak);
+        }
+
+        function showCelebration(meters, oldRank, newRank, oldStreak, newStreak) {
+            const overlay = document.getElementById('celebration-overlay');
+            const icon = document.getElementById('celebration-icon');
+            const title = document.getElementById('celebration-title');
+            const stats = document.getElementById('celebration-stats');
+            const shareBtn = document.getElementById('celebrate-share-btn');
+            
+            // Set celebration icon
+            if (meters >= 3000) {
+                icon.textContent = '🚀';
+            } else if (meters >= 1500) {
+                icon.textContent = '⚡';
+            } else {
+                icon.textContent = '🏊';
+            }
+            
+            // Set title
+            if (newStreak > oldStreak && newStreak >= 7) {
+                title.textContent = `🔥 ${newStreak}-Day Streak!`;
+            } else if (oldRank && newRank < oldRank) {
+                title.textContent = `🏆 Rank Up!`;
+            } else {
+                title.textContent = `Swim Logged!`;
+            }
+            
+            // Build stats
+            let statsHTML = '';
+            
+            // Streak change
+            if (newStreak > oldStreak) {
+                statsHTML += `
+                    <div class="celebration-stat">
+                        <div class="celebration-stat-icon">🔥</div>
+                        <div class="celebration-stat-text">${newStreak} days</div>
+                        <div class="celebration-stat-change">+${newStreak - oldStreak}</div>
+                    </div>
+                `;
+            } else {
+                statsHTML += `
+                    <div class="celebration-stat">
+                        <div class="celebration-stat-icon">🔥</div>
+                        <div class="celebration-stat-text">${newStreak} day streak</div>
+                    </div>
+                `;
+            }
+            
+            // Rank change
+            if (oldRank && newRank < oldRank) {
+                statsHTML += `
+                    <div class="celebration-stat">
+                        <div class="celebration-stat-icon">🏆</div>
+                        <div class="celebration-stat-text">#${newRank} this week</div>
+                        <div class="celebration-stat-change">↑ ${oldRank - newRank}</div>
+                    </div>
+                `;
+            } else {
+                statsHTML += `
+                    <div class="celebration-stat">
+                        <div class="celebration-stat-icon">🏆</div>
+                        <div class="celebration-stat-text">#${newRank} this week</div>
+                    </div>
+                `;
+            }
+            
+            // Total meters
+            statsHTML += `
+                <div class="celebration-stat">
+                    <div class="celebration-stat-icon">📏</div>
+                    <div class="celebration-stat-text">${formatNumber(userData.totalMeters)}m total</div>
+                </div>
+            `;
+            
+            stats.innerHTML = statsHTML;
+            
+            // Show share button only for significant achievements
+            const shouldShowShare = (
+                (newStreak >= 7 && newStreak > oldStreak) || // Streak milestone
+                (oldRank && newRank === 1) || // Reached #1
+                (oldRank && newRank <= 3 && newRank < oldRank) // Moved into top 3
+            );
+            
+            shareBtn.style.display = shouldShowShare ? 'inline-flex' : 'none';
+            
+            // Show celebration
+            overlay.style.display = 'flex';
+            
+            // Add confetti for significant achievements
+            if (shouldShowShare && typeof confetti === 'function') {
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }, 300);
+            }
+        }
+
+        function closeCelebration() {
+            document.getElementById('celebration-overlay').style.display = 'none';
+            // Focus input for next log
+            setTimeout(() => {
+                document.getElementById('meters-input').focus();
+                updateHomeScreen();
+            }, 100);
+        }
+
+        function shareCelebration() {
+            const newStreak = userData.currentStreak;
+            const oldStreak = userData.currentStreak - 1; // Assuming streak increased by 1
+            
+            // Determine what to share based on achievement
+            if (newStreak >= 7 && newStreak > oldStreak) {
+                // Streak milestone
+                generateShareCard('streak', {
+                    days: newStreak,
+                    totalMeters: userData.totalMeters,
+                    rank: document.getElementById('weekly-rank').textContent.replace('#', ''),
+                    quote: getMotivationalQuote(newStreak)
+                });
+            } else {
+                // General progress
+                generateShareCard('progress', {});
+            }
+            
+            closeCelebration();
+        }
+
+        function getMotivationalQuote(streak) {
+            const quotes = [
+                "Consistency beats motivation.",
+                "Small daily improvements lead to big results.",
+                "Habits compound like interest.",
+                "Discipline is choosing what you want most over what you want now.",
+                "Excellence is not an act, but a habit.",
+                "The only bad workout is the one that didn't happen.",
+                "Every lap counts.",
+                "Progress, not perfection."
+            ];
+            
+            if (streak >= 30) return quotes[3];
+            if (streak >= 14) return quotes[1];
+            if (streak >= 7) return quotes[0];
+            return quotes[Math.floor(Math.random() * quotes.length)];
+        }
+
+        function updateStreak() {
+            if (userData.practices.length === 0) {
+                userData.currentStreak = 0;
+                return;
+            }
+            
+            // Get unique practice dates sorted newest first - FIXED
+            const uniqueDates = [...new Set(userData.practices.map(p => 
+                new Date(p.date).toDateString()
+            ))].sort((a, b) => new Date(b) - new Date(a));
+            
+            let streak = 0;
+            let currentDate = new Date();
+            currentDate.setHours(0, 0, 0, 0); // Normalize to start of day
+            
+            // Check consecutive days from today backward - FIXED
+            for (let i = 0; i < uniqueDates.length; i++) {
+                const practiceDate = new Date(uniqueDates[i]);
+                practiceDate.setHours(0, 0, 0, 0);
+                
+                const expectedDate = new Date(currentDate);
+                expectedDate.setDate(currentDate.getDate() - i);
+                
+                if (practiceDate.getTime() === expectedDate.getTime()) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            
+            const oldStreak = userData.currentStreak;
+            userData.currentStreak = streak;
+            
+            if (streak > userData.bestStreak) {
+                userData.bestStreak = streak;
+            }
+            
+            // Handle streak loss with emotional impact
+            if (oldStreak > 0 && streak === 0) {
+                showStreakLossModal(oldStreak);
+            } else if (oldStreak >= 7 && streak === 0) {
+                // Major streak loss
+                showMajorStreakLoss(oldStreak);
+            }
+        }
+
+        function checkStreakMilestones() {
+            const milestones = [7, 14, 30, 60, 90];
+            const current = userData.currentStreak;
+            
+            milestones.forEach(milestone => {
+                if (current === milestone && !userData.celebratedMilestones?.includes(milestone)) {
+                    // Mark as celebrated (but don't auto-share - user will see in celebration)
+                    userData.celebratedMilestones = userData.celebratedMilestones || [];
+                    userData.celebratedMilestones.push(milestone);
+                    saveData();
+                }
+            });
+        }
+
+        function showStreakLossModal(oldStreak) {
+            // Create emotional streak loss modal
+            const modal = document.createElement('div');
+            modal.className = 'streak-loss-modal';
+            modal.innerHTML = `
+                <div class="streak-loss-content">
+                    <div style="font-size: 72px; margin-bottom: 16px;">💔</div>
+                    <h2 style="color:var(--danger); margin-bottom: 16px;">Streak Broken</h2>
+                    <p style="margin-bottom: 16px; font-size: 18px;">You lost your ${oldStreak}-day streak.</p>
+                    <p style="font-style: italic; margin-bottom: 24px; color: var(--gray-dark);">
+                        "Don't miss twice. Get back in the pool tomorrow."
+                    </p>
+                    <button onclick="this.closest('.streak-loss-modal').remove()" 
+                            style="background:var(--primary); color:white; border:none; padding:12px 32px; border-radius:8px; font-size:16px; cursor:pointer;">
+                        Back to Swimming
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Add haptic feedback if available
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200, 100, 200]);
+            }
+        }
+
+        function showMajorStreakLoss(oldStreak) {
+            // Even more dramatic for major streaks
+            const modal = document.createElement('div');
+            modal.className = 'streak-loss-modal';
+            modal.innerHTML = `
+                <div class="streak-loss-content" style="border: 3px solid var(--danger);">
+                    <div style="font-size: 72px; margin-bottom: 16px;">😢</div>
+                    <h2 style="color:var(--danger); margin-bottom: 16px;">STREAK SNAPPED</h2>
+                    <p style="margin-bottom: 16px; font-size: 20px; font-weight: bold;">
+                        ${oldStreak} days... gone.
+                    </p>
+                    <p style="margin-bottom: 16px;">
+                        That was ${Math.floor(oldStreak / 7)} weeks of consistency.
+                    </p>
+                    <p style="font-style: italic; margin-bottom: 24px; color: var(--danger); font-weight: bold;">
+                        "The comeback is always stronger than the setback."
+                    </p>
+                    <button onclick="this.closest('.streak-loss-modal').remove()" 
+                            style="background:var(--danger); color:white; border:none; padding:12px 32px; border-radius:8px; font-size:16px; cursor:pointer; font-weight:bold;">
+                        START OVER
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Extended haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate([300, 200, 300, 200, 300]);
+            }
+        }
+
+        // ===================== BADGES =====================
+        function checkForNewBadges() {
+            const earnedBadgeIds = userData.badges.map(b => b.id);
+            const newBadges = [];
+            
+            badges.forEach(badge => {
+                if (!earnedBadgeIds.includes(badge.id) && badge.check(userData)) {
+                    newBadges.push(badge);
+                    userData.badges.push({
+                        id: badge.id,
+                        name: badge.name,
+                        icon: badge.icon,
+                        earnedDate: new Date().toISOString(),
+                        points: badge.points
+                    });
+                }
+            });
+            
+            if (newBadges.length > 0) {
+                saveData();
+                showToast('New badge earned!', 'Check your SwimMarks', '🏆');
+            }
+        }
+
+        // ===================== SHARE CARD SYSTEM =====================
+        async function generateShareCard(type, data) {
+            const canvas = document.getElementById('share-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, 1200, 630);
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+            gradient.addColorStop(0, '#0066cc');
+            gradient.addColorStop(1, '#00cc99');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 630);
+            
+            // Add decorative waves
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(1200, 630 - i * 80, 200 + i * 40, Math.PI, Math.PI * 1.5);
+                ctx.fill();
+            }
+            
+            // Branding
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 56px system-ui';
+            ctx.fillText('🏊 SwimMarks', 80, 120);
+            
+            // Content based on type
+            if (type === 'streak') {
+                // Streak achievement
+                ctx.font = 'bold 120px system-ui';
+                ctx.fillText(`🔥 ${data.days}-DAY STREAK`, 80, 300);
+                
+                ctx.font = 'bold 48px system-ui';
+                ctx.fillText(`📏 ${formatNumber(data.totalMeters)}m Total`, 80, 400);
+                ctx.fillText(`🏆 #${data.rank} This Week`, 80, 480);
+                
+                ctx.font = 'italic 36px system-ui';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillText(`"${data.quote}"`, 80, 560);
+                
+            } else if (type === 'badge') {
+                // Badge achievement
+                ctx.font = 'bold 96px system-ui';
+                ctx.fillText(data.badge.icon, 80, 280);
+                ctx.fillText(data.badge.name, 180, 280);
+                
+                ctx.font = 'bold 36px system-ui';
+                ctx.fillText(data.badge.description, 80, 350);
+                
+                ctx.font = '48px system-ui';
+                ctx.fillText(`🔥 ${data.streak} day streak`, 80, 440);
+                ctx.fillText(`📏 ${formatNumber(data.totalMeters)}m total`, 80, 520);
+                
+            } else {
+                // General progress
+                ctx.font = 'bold 72px system-ui';
+                ctx.fillText(`My Swim Progress`, 80, 300);
+                
+                ctx.font = 'bold 48px system-ui';
+                ctx.fillText(`🔥 ${userData.currentStreak} day streak`, 80, 400);
+                ctx.fillText(`📏 ${formatNumber(userData.totalMeters)}m total`, 80, 480);
+                ctx.fillText(`🏆 #${document.getElementById('weekly-rank').textContent.replace('#', '')} this week`, 80, 560);
+            }
+            
+            // Footer
+            ctx.font = '24px system-ui';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fillText('facebook.com/SwimLegion', 80, 600);
+            
+            // Convert to blob and share - WITH FALLBACK
+            return new Promise((resolve) => {
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        // Fallback for browsers that don't support toBlob
+                        showToast('Sharing not supported', 'Try screenshotting instead', '📱');
+                        canvas.style.display = 'block';
+                        canvas.style.position = 'relative';
+                        canvas.style.top = '0';
+                        canvas.style.left = '0';
+                        resolve();
+                        return;
+                    }
+                    
+                    if (navigator.share && navigator.canShare) {
+                        try {
+                            const file = new File([blob], 'swimmarks-share.png', { type: 'image/png' });
+                            
+                            if (navigator.canShare({ files: [file] })) {
+                                await navigator.share({
+                                    files: [file],
+                                    title: 'My SwimMarks Achievement',
+                                    text: 'Check out my swimming progress!'
+                                });
+                                showToast('Shared!', 'Your achievement was shared', '📱');
+                            }
+                        } catch (err) {
+                            // Fallback to download
+                            downloadImage(blob);
+                        }
+                    } else {
+                        // Fallback to download
+                        downloadImage(blob);
+                    }
+                    resolve();
+                }, 'image/png');
+            });
+        }
+
+        function downloadImage(blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `swimmarks-${new Date().toISOString().split('T')[0]}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('Image saved!', 'Share it from your photos', '💾');
+        }
+
+        function shareProgress() {
+            generateShareCard('progress', {});
+        }
+
+        function shareLatestBadge() {
+            if (userData.badges.length === 0) {
+                showToast('No badges yet', 'Log some swims to earn badges!', '🏊');
+                return;
+            }
+            
+            const latestBadge = userData.badges[userData.badges.length - 1];
+            const badgeDef = badges.find(b => b.id === latestBadge.id);
+            generateShareCard('badge', {
+                badge: badgeDef,
+                streak: userData.currentStreak,
+                totalMeters: userData.totalMeters
+            });
+        }
+
+        function shareBadgeCard(badgeId) {
+            const badge = badges.find(b => b.id === badgeId);
+            const earnedBadge = userData.badges.find(b => b.id === badgeId);
+            
+            if (badge && earnedBadge) {
+                generateShareCard('badge', {
+                    badge: badge,
+                    streak: userData.currentStreak,
+                    totalMeters: userData.totalMeters
+                });
+            }
+        }
+
+        // ===================== DATA MANAGEMENT =====================
+        function confirmReset() {
+            if (confirm('Reset all data? This will delete all your swims, streaks, and badges. This cannot be undone.')) {
+                resetAllData();
+            }
+        }
+
+        function resetAllData() {
+            userData = {
+                totalMeters: 0,
+                practices: [],
+                currentStreak: 0,
+                bestStreak: 0,
+                badges: [],
+                joinDate: new Date().toISOString(),
+                name: "You",
+                celebratedMilestones: [],
+                lastLogDate: null,
+                lastRank: null
+            };
+            
+            saveData();
+            updateHomeScreen();
+            showToast('Data reset', 'Fresh start! Time to build new streaks!', '🔄');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(userData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `swimmarks-backup-${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showToast('Data exported', 'Your swim data has been downloaded', '💾');
+        }
+
+        // ===================== UTILITIES =====================
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        // FIXED TOAST FUNCTIONS
+        function showToast(title, desc, icon) {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'flex';
+            document.getElementById('toast-icon').textContent = icon;
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-desc').textContent = desc;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                hideToast();
+            }, 4000);
+        }
+
+        function hideToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('show');
+            
+            // Remove the toast element after animation completes
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 300);
+        }
+
+        // FIXED EVENT LISTENERS
+        function setupEventListeners() {
+            // Use event delegation for dynamic elements
+            document.addEventListener('keypress', function(e) {
+                if (e.target.id === 'meters-input' && e.key === 'Enter') {
+                    logSwim();
+                }
+                if (e.target.id === 'swim-note' && e.key === 'Enter') {
+                    logSwim();
+                }
+            });
+            
+            // Single input handler
+            const input = document.getElementById('meters-input');
+            input.addEventListener('input', function(e) {
+                const value = parseInt(e.target.value) || 0;
+                adjustFontSizeForNumber(value);
+            });
+        }
+
+        // ===================== PWA SUPPORT =====================
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            setTimeout(() => {
+                if (!localStorage.getItem('swimMarksInstallDismissed')) {
+                    showToast('Install SwimMarks', 'Add to home screen for quick access', '📱');
+                    localStorage.setItem('swimMarksInstallDismissed', 'true');
+                }
+            }, 5000);
+        });
+
+        // ===================== INITIALIZE =====================
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
